@@ -67,13 +67,13 @@ app.post('/session/load', (req, res, next) => {
 
     chatkit
       .getUserRooms({
-        userID: createdUser.id,
+        userId: createdUser.id,
       })
       .then(rooms => {
         let clientRoom = null;
 
         // Loop through user rooms to see if there is already a room for the client
-        clientRoom = rooms.filter(room => {
+        clientRoom = rooms.find(room => {
           return room.name === createdUser.id;
         });
 
@@ -87,7 +87,7 @@ app.post('/session/load', (req, res, next) => {
             creatorId: createdUser.id,
             isPrivate: true,
             name: createdUser.id,
-            userIds: ['Chatkit-dashboard',createdUser.id],
+            userIds: ['Chatkit-dashboard', createdUser.id],
           })
           .then(room => res.json(room))
           .catch(err => {
