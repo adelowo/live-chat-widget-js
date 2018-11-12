@@ -32,7 +32,7 @@ app.post('/session/load', (req, res, next) => {
   // If there is no user matching the ID, we create one but if there is one we skip
   // creating and go straight into fetching the chat room for that user
 
-  let createdUser = {};
+  let createdUser = null;
 
   chatkit
     .createUser({
@@ -45,9 +45,16 @@ app.post('/session/load', (req, res, next) => {
       getUserRoom(req, res, next, false);
     })
     .catch(err => {
-      err.error_type === 'services/chatkit/user/user_already_exists'
-        ? getUserRoom(req, res, next, true)
-        : next(err);
+      if (err.error === 'services/chatkit/user_already_exists') {
+        createdUser = {
+          id: req.body.email,
+        };
+
+        getUserRoom(req, res, next, true);
+        return;
+      }
+
+      next(err);
     });
 
   function getUserRoom(req, res, next, existingAccount) {
@@ -65,9 +72,10 @@ app.post('/session/load', (req, res, next) => {
       .then(rooms => {
         let clientRoom = null;
 
-        console.log(rooms);
         // Loop through user rooms to see if there is already a room for the client
-        clientRoom = rooms.filter(room => room.name === createdUser.id);
+        clientRoom = rooms.filter(room => {
+          return room.name === createdUser.id;
+        });
 
         if (clientRoom && clientRoom.id) {
           return res.json(clientRoom);
@@ -79,7 +87,7 @@ app.post('/session/load', (req, res, next) => {
             creatorId: createdUser.id,
             isPrivate: true,
             name: createdUser.id,
-            userIds: ['Chatkit-dashboard'],
+            userIds: ['Chatkit-dashboard',createdUser.id],
           })
           .then(room => res.json(room))
           .catch(err => {
